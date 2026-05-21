@@ -25,6 +25,7 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
 
         while(jogoEmAndamento) {
             if(!minhaVez) {
+                // Pausa para não sobrecarregar a CPU enquanto aguarda o turno
                 try {Thread.sleep(200);} catch (InterruptedException e) {}
                 continue;
             }
