@@ -13,6 +13,7 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
     private int id;
     private boolean minhaVez = false;
     private boolean jogoEmAndamento = true;
+    private final Scanner sc = new Scanner(System.in);
 
     public GameClienteImpl(GameServidor servidor) throws RemoteException {
         this.servidor = servidor;
@@ -21,7 +22,6 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
     }
 
     public void iniciarInputLoop() {
-        Scanner sc = new Scanner(System.in);
 
         while(jogoEmAndamento) {
             if(!minhaVez) {
@@ -83,6 +83,9 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
 
     @Override
     public void solicitarRevanche() throws RemoteException {
-        //todo: inserir o metodo de revanche
+        jogoEmAndamento = false;
+        System.out.println("Deseja jogar novamente? (s/n)");
+        String resposta = sc.next().trim().toLowerCase();
+        servidor.confirmarRevanche(id, resposta.equals("s"));
     }
 }

@@ -6,7 +6,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 public class ClienteMain {
-    static void main() {
+    public static void main(String[] args) {
         try {
             // procurar o registro RMI na rede. passar IP e porta
             Registry registry = LocateRegistry.getRegistry("localhost", 1099);
