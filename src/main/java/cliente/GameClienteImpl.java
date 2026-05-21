@@ -20,7 +20,7 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
         System.out.println("Cliente registrado com sucesso! Você é o jogador " + id);
     }
 
-    public void loopCapturaTeclado() {
+    public void iniciarInputLoop() {
         Scanner sc = new Scanner(System.in);
 
         while(jogoEmAndamento) {
