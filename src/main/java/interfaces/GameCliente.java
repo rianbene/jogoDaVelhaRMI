@@ -32,4 +32,10 @@ public interface GameCliente extends Remote {
      * ao utilizador se deseja iniciar uma revanche
      */
     void solicitarRevanche() throws RemoteException;
+
+    /**
+     * Notifica o cliente que a sessão foi encerrada definitivamente
+     * (pelo menos um jogador recusou a revanche).
+     */
+    void encerrarSessao() throws RemoteException;
 }

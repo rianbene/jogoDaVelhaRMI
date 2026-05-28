@@ -9,17 +9,25 @@ import java.util.Scanner;
 
 public class GameClienteImpl extends UnicastRemoteObject implements GameCliente {
 
-    private GameServidor servidor;
-    private int id;
-    private boolean minhaVez = false;
-    private boolean jogoEmAndamento = true;
-    private final Scanner sc = new Scanner(System.in);
+    private final GameServidor servidor;
+    private final int id;
+    private volatile boolean minhaVez = false;
+    private volatile boolean jogoEmAndamento = true;
+    private volatile boolean sessaoAtiva = true;
+    private final Scanner sc;
 
-    public GameClienteImpl(GameServidor servidor) throws RemoteException {
+    public GameClienteImpl(GameServidor servidor, Scanner scanner) throws RemoteException {
         this.servidor = servidor;
+        this.sc = scanner;
         this.id = servidor.registrarCliente(this);
         System.out.println("Cliente registrado com sucesso! Você é o jogador " + id);
     }
+
+    public int getId() { return id; }
+
+    public boolean isJogoEmAndamento() { return jogoEmAndamento; }
+
+    public boolean isSessaoAtiva() { return sessaoAtiva; }
 
     public void iniciarInputLoop() {
 
@@ -71,7 +79,8 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
     @Override
     public void notificarTurno(boolean suaVez) throws RemoteException {
         this.minhaVez = suaVez;
-        if(!suaVez) {
+        this.jogoEmAndamento = true;
+        if (!suaVez) {
             System.out.println("Aguarde o turno do oponente...");
         }
     }
@@ -84,8 +93,11 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
     @Override
     public void solicitarRevanche() throws RemoteException {
         jogoEmAndamento = false;
-        System.out.println("Deseja jogar novamente? (s/n)");
-        String resposta = sc.next().trim().toLowerCase();
-        servidor.confirmarRevanche(id, resposta.equals("s"));
+    }
+
+    @Override
+    public void encerrarSessao() throws RemoteException {
+        sessaoAtiva = false;
+        jogoEmAndamento = true;
     }
 }

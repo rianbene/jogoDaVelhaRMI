@@ -37,22 +37,37 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
     }
 
     @Override
-    public synchronized void realizarJogada(int indice, int idJogador) throws RemoteException {
-        if (jogoEncerrado) return;
-        if (idJogador != jogadorAtual) return;
-        if (indice < 0 || indice > 8) return;
-        if (!tabuleiro[indice].isEmpty()) return;
+    public void realizarJogada(int indice, int idJogador) throws RemoteException {
+        final String[] snapshot;
+        final String vencedor;
+        final boolean empate;
+        final int proximoJogador;
 
-        tabuleiro[indice] = (idJogador == 1) ? "X" : "O";
+        synchronized (this) {
+            if (jogoEncerrado) return;
+            if (idJogador != jogadorAtual) return;
+            if (indice < 0 || indice > 8) return;
+            if (!tabuleiro[indice].isEmpty()) return;
 
-        String[] snapshot = tabuleiro.clone();
+            tabuleiro[indice] = (idJogador == 1) ? "X" : "O";
+            snapshot = tabuleiro.clone();
+            vencedor = verificarVencedor(tabuleiro);
+            empate = (vencedor == null) && verificarEmpate(tabuleiro);
+
+            if (vencedor != null || empate) {
+                jogoEncerrado = true;
+                proximoJogador = -1;
+            } else {
+                jogadorAtual = (jogadorAtual == 1) ? 2 : 1;
+                proximoJogador = jogadorAtual;
+            }
+        }
+
         for (GameCliente c : clientes) {
             if (c != null) c.atualizarTela(snapshot);
         }
 
-        String vencedor = verificarVencedor(tabuleiro);
         if (vencedor != null) {
-            jogoEncerrado = true;
             System.out.println("Jogo encerrado! Vencedor: Jogador " + idJogador + " (" + vencedor + ").");
             clientes[idJogador - 1].exibirMensagem("Você venceu!");
             clientes[2 - idJogador].exibirMensagem("Você perdeu.");
@@ -62,8 +77,7 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
             return;
         }
 
-        if (verificarEmpate(tabuleiro)) {
-            jogoEncerrado = true;
+        if (empate) {
             System.out.println("Jogo encerrado! Empate.");
             for (GameCliente c : clientes) {
                 if (c != null) {
@@ -74,34 +88,48 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
             return;
         }
 
-        jogadorAtual = (jogadorAtual == 1) ? 2 : 1;
-        System.out.println("Vez do Jogador " + jogadorAtual + ".");
-        clientes[jogadorAtual - 1].notificarTurno(true);
-        clientes[2 - jogadorAtual].notificarTurno(false);
+        System.out.println("Vez do Jogador " + proximoJogador + ".");
+        clientes[proximoJogador - 1].notificarTurno(true);
+        clientes[2 - proximoJogador].notificarTurno(false);
     }
 
     @Override
-    public synchronized void confirmarRevanche(int idJogador, boolean aceita) throws RemoteException {
-        respostasRevanche[idJogador - 1] = aceita;
-        respostasRecebidas++;
+    public void confirmarRevanche(int idJogador, boolean aceita) throws RemoteException {
+        final boolean ambosResponderam;
+        final boolean ambosAceitaram;
 
-        if (respostasRecebidas < 2) return;
+        synchronized (this) {
+            respostasRevanche[idJogador - 1] = aceita;
+            respostasRecebidas++;
+            ambosResponderam = respostasRecebidas == 2;
+            ambosAceitaram = ambosResponderam && respostasRevanche[0] && respostasRevanche[1];
+            if (ambosResponderam) respostasRecebidas = 0;
+        }
 
-        respostasRecebidas = 0;
-        if (respostasRevanche[0] && respostasRevanche[1]) {
+        if (!ambosResponderam) return;
+
+        if (ambosAceitaram) {
             iniciarJogo();
         } else {
             for (GameCliente cliente : clientes) {
-                if (cliente != null) cliente.exibirMensagem("Jogo encerrado. Até a próxima!");
+                if (cliente != null) {
+                    cliente.exibirMensagem("Jogo encerrado. Até a próxima!");
+                    cliente.encerrarSessao();
+                }
             }
         }
     }
 
     private void iniciarJogo() throws RemoteException {
-        resetarTabuleiro();
-        jogoEncerrado = false;
-        jogadorAtual = 1;
-        String[] snapshot = tabuleiro.clone();
+        final String[] snapshot;
+
+        synchronized (this) {
+            resetarTabuleiro();
+            jogoEncerrado = false;
+            jogadorAtual = 1;
+            snapshot = tabuleiro.clone();
+        }
+
         for (GameCliente cliente : clientes) {
             if (cliente != null) cliente.atualizarTela(snapshot);
         }

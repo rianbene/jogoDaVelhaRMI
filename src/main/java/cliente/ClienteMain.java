@@ -4,21 +4,34 @@ import interfaces.GameServidor;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.Scanner;
 
 public class ClienteMain {
     public static void main(String[] args) {
         try {
-            // procurar o registro RMI na rede. passar IP e porta
             Registry registry = LocateRegistry.getRegistry("localhost", 1099);
-
-            // buscar do servidor no registry pelo nome
             GameServidor servidor = (GameServidor) registry.lookup("JogoDaVelhaServidor");
 
-            // instanciar o cliente passando a referencia do servidor
-            GameClienteImpl cliente = new GameClienteImpl(servidor);
+            Scanner scanner = new Scanner(System.in);
+            GameClienteImpl cliente = new GameClienteImpl(servidor, scanner);
 
-            // iniciar o loop dos inputs
-            cliente.iniciarInputLoop();
+            while (true) {
+                cliente.iniciarInputLoop();
+
+                System.out.println("Deseja jogar novamente? (s/n)");
+                boolean aceita = scanner.next().trim().equalsIgnoreCase("s");
+                servidor.confirmarRevanche(cliente.getId(), aceita);
+
+                if (!aceita) break;
+
+                while (!cliente.isJogoEmAndamento()) {
+                    Thread.sleep(100);
+                }
+
+                if (!cliente.isSessaoAtiva()) break;
+            }
+
+            System.out.println("Até a próxima!");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
