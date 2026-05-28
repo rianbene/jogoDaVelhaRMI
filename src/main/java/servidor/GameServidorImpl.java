@@ -53,18 +53,18 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
         String vencedor = verificarVencedor(tabuleiro);
         if (vencedor != null) {
             jogoEncerrado = true;
-            String msg = "Jogador " + idJogador + " (" + vencedor + ") venceu!";
+            System.out.println("Jogo encerrado! Vencedor: Jogador " + idJogador + " (" + vencedor + ").");
+            clientes[idJogador - 1].exibirMensagem("Você venceu!");
+            clientes[2 - idJogador].exibirMensagem("Você perdeu.");
             for (GameCliente c : clientes) {
-                if (c != null) {
-                    c.exibirMensagem(msg);
-                    c.solicitarRevanche();
-                }
+                if (c != null) c.solicitarRevanche();
             }
             return;
         }
 
         if (verificarEmpate(tabuleiro)) {
             jogoEncerrado = true;
+            System.out.println("Jogo encerrado! Empate.");
             for (GameCliente c : clientes) {
                 if (c != null) {
                     c.exibirMensagem("Empate!");
@@ -75,6 +75,7 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
         }
 
         jogadorAtual = (jogadorAtual == 1) ? 2 : 1;
+        System.out.println("Vez do Jogador " + jogadorAtual + ".");
         clientes[jogadorAtual - 1].notificarTurno(true);
         clientes[2 - jogadorAtual].notificarTurno(false);
     }
