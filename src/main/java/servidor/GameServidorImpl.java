@@ -11,9 +11,9 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
     private final GameCliente[] clientes = new GameCliente[2];
     private final String[] tabuleiro = new String[9];
     private int jogadorAtual = 1;
-    private final boolean[] respostasRevanche = new boolean[2];
-    private int respostasRecebidas = 0;
     private boolean jogoEncerrado = false;
+    // simplificação, apenas um contador de votos pra revanche
+    private int votosRevanche = 0;
 
     public GameServidorImpl() throws RemoteException {
         super();
@@ -43,36 +43,30 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
         final boolean empate;
         final int proximoJogador;
 
-        final boolean posicaoOcupada;
-
         synchronized (this) {
             if (jogoEncerrado) return;
             if (idJogador != jogadorAtual) return;
             if (indice < 0 || indice > 8) return;
 
-            posicaoOcupada = !tabuleiro[indice].isEmpty();
-            if (posicaoOcupada) {
-                snapshot = null; vencedor = null; empate = false; proximoJogador = -1;
-            } else {
-                tabuleiro[indice] = (idJogador == 1) ? "X" : "O";
-                snapshot = tabuleiro.clone();
-                vencedor = verificarVencedor(tabuleiro);
-                empate = (vencedor == null) && verificarEmpate(tabuleiro);
-
-                if (vencedor != null || empate) {
-                    jogoEncerrado = true;
-                    proximoJogador = -1;
-                } else {
-                    jogadorAtual = (jogadorAtual == 1) ? 2 : 1;
-                    proximoJogador = jogadorAtual;
-                }
+            // VALIDAÇÃO NO SERVIDOR: Se a posição estiver ocupada, devolvemos o turno!
+            if (!tabuleiro[indice].isEmpty()) {
+                clientes[idJogador - 1].exibirMensagem("Posição já ocupada! Tente novamente.");
+                clientes[idJogador - 1].notificarTurno(true); // Destrava o cliente
+                return; // Encerra o método sem alterar nada
             }
-        }
 
-        if (posicaoOcupada) {
-            clientes[idJogador - 1].exibirMensagem("Posição já ocupada! Tente novamente.");
-            clientes[idJogador - 1].notificarTurno(true);
-            return;
+            tabuleiro[indice] = (idJogador == 1) ? "0" : "X";
+            snapshot = tabuleiro.clone();
+            vencedor = verificarVencedor(tabuleiro);
+            empate = (vencedor == null) && verificarEmpate(tabuleiro);
+
+            if (vencedor != null || empate) {
+                jogoEncerrado = true;
+                proximoJogador = -1;
+            } else {
+                jogadorAtual = (jogadorAtual == 1) ? 2 : 1;
+                proximoJogador = jogadorAtual;
+            }
         }
 
         for (GameCliente c : clientes) {
@@ -107,27 +101,29 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
 
     @Override
     public void confirmarRevanche(int idJogador, boolean aceita) throws RemoteException {
-        final boolean ambosResponderam;
-        final boolean ambosAceitaram;
-
-        synchronized (this) {
-            respostasRevanche[idJogador - 1] = aceita;
-            respostasRecebidas++;
-            ambosResponderam = respostasRecebidas == 2;
-            ambosAceitaram = ambosResponderam && respostasRevanche[0] && respostasRevanche[1];
-            if (ambosResponderam) respostasRecebidas = 0;
-        }
-
-        if (!ambosResponderam) return;
-
-        if (ambosAceitaram) {
-            iniciarJogo();
-        } else {
+        // Se alguém recusar, derruba a sessão para todos
+        if (!aceita) {
+            System.out.println("Jogador " + idJogador + " recusou a revanche.");
             for (GameCliente cliente : clientes) {
                 if (cliente != null) {
-                    cliente.exibirMensagem("Jogo encerrado. Até a próxima!");
-                    cliente.encerrarSessao();
+                    try {
+                        cliente.exibirMensagem("Um jogador recusou a revanche. Sessão encerrada.");
+                        cliente.encerrarSessao();
+                    } catch (RemoteException e) { /* Ignora se o cliente já tiver caído */ }
                 }
+            }
+            return;
+        }
+
+        // Se aceitou, contabiliza o voto
+        synchronized (this) {
+            votosRevanche++;
+            if (votosRevanche == 2) {
+                System.out.println("Ambos aceitaram. Iniciando nova rodada!");
+                votosRevanche = 0; // Zera para o próximo jogo
+                iniciarJogo();     // Inicia a partida como se fosse a primeira vez
+            } else {
+                clientes[idJogador - 1].exibirMensagem("Aguardando o oponente aceitar a revanche...");
             }
         }
     }
@@ -147,7 +143,7 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
         }
         clientes[0].notificarTurno(true);
         clientes[1].notificarTurno(false);
-        System.out.println("Jogo iniciado! Vez do Jogador 1.");
+        System.out.println("Nova rodada iniciada! Vez do Jogador 1.");
     }
 
     private void resetarTabuleiro() {
@@ -158,9 +154,9 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
 
     static String verificarVencedor(String[] tab) {
         int[][] combinacoes = {
-            {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // linhas
-            {0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // colunas
-            {0, 4, 8}, {2, 4, 6} // diagonais
+            { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 }, // linhas
+            { 0, 3, 6 }, { 1, 4, 7 }, { 2, 5, 8 }, // colunas
+            { 0, 4, 8 }, { 2, 4, 6 } // diagonais
         };
         for (int[] comb : combinacoes) {
             String a = tab[comb[0]];

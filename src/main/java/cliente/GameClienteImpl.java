@@ -12,7 +12,7 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
     private final GameServidor servidor;
     private final int id;
     private volatile boolean minhaVez = false;
-    private volatile boolean jogoEmAndamento = true;
+    private volatile boolean pedindoRevanche = false;
     private volatile boolean sessaoAtiva = true;
     private final Scanner sc;
 
@@ -23,17 +23,31 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
         System.out.println("Cliente registrado com sucesso! Você é o jogador " + id);
     }
 
-    public int getId() { return id; }
-
-    public boolean isJogoEmAndamento() { return jogoEmAndamento; }
-
-    public boolean isSessaoAtiva() { return sessaoAtiva; }
-
     public void iniciarInputLoop() {
-
-        while(jogoEmAndamento) {
+        // loop dura até a sessão ser encerrada
+        while(sessaoAtiva) {
+            // verifica pedido de revanche antes de jogar
+            if (pedindoRevanche) {
+                System.out.println("\nDeseja jogar novamente? (S/N)");
+                String resposta = sc.next();
+                boolean aceita = resposta.trim().equalsIgnoreCase("s");
+                pedindoRevanche = false; // Já lemos a resposta
+                
+                try {
+                    servidor.confirmarRevanche(id, aceita);
+                } catch (RemoteException e) {
+                    System.out.println("Erro ao comunicar com o servidor.");
+                    sessaoAtiva = false;
+                }
+                
+                if (!aceita) sessaoAtiva = false; // Encerra o loop localmente
+                continue;
+                }
+                
+            }
+            
+            // lógica padrão de verificação de jogada
             if(!minhaVez) {
-                // Pausa para não sobrecarregar a CPU enquanto aguarda o turno
                 try {Thread.sleep(200);} catch (InterruptedException e) {}
                 continue;
             }
@@ -54,9 +68,12 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
 
             try {
                 minhaVez = false; //bloqueia o usuario de digitar 2x, só o servidor q pode dizer se é a vez dele agr
-                servidor.realizarJogada(posicao, id);
+                servidor.realizarJogada(posicao, id); 
+                //agr se a jogada falhar, o servidor enviar notificarTurno(true) em realizarJogada()
+                //para jogar novamente
             } catch (RemoteException e) {
                 System.out.println("Erro ao comunicar com o servidor: " + e.getMessage());
+                minhaVez = true; //desbloqueia o cliente para tentar jogar novamente
             }
         }
     }
@@ -92,12 +109,13 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
 
     @Override
     public void solicitarRevanche() throws RemoteException {
-        jogoEmAndamento = false;
+        // Apenas aciona a flag. O InputLoop vai ver isso e perguntar ao usuário.
+        this.pedindoRevanche = true;
     }
 
     @Override
     public void encerrarSessao() throws RemoteException {
-        sessaoAtiva = false;
-        jogoEmAndamento = true;
+        this.sessaoAtiva = false;
+        System.exit(0); // Força a interrupção da execução do cliente
     }
 }

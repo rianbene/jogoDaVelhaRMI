@@ -15,23 +15,13 @@ public class ClienteMain {
             Scanner scanner = new Scanner(System.in);
             GameClienteImpl cliente = new GameClienteImpl(servidor, scanner);
 
-            while (true) {
-                cliente.iniciarInputLoop();
-
-                System.out.println("Deseja jogar novamente? (s/n)");
-                boolean aceita = scanner.next().trim().equalsIgnoreCase("s");
-                servidor.confirmarRevanche(cliente.getId(), aceita);
-
-                if (!aceita) break;
-
-                while (!cliente.isJogoEmAndamento()) {
-                    Thread.sleep(100);
-                }
-
-                if (!cliente.isSessaoAtiva()) break;
-            }
+            // Toda a lógica foi centralizada. 
+            // O código fica bloqueado aqui dentro até a sessão acabar.
+            cliente.iniciarInputLoop();
 
             System.out.println("Até a próxima!");
+            System.exit(0);
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
