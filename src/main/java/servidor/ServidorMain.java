@@ -6,6 +6,8 @@ import java.rmi.registry.Registry;
 public class ServidorMain {
     public static void main(String[] args) {
         try {
+            System.setProperty("java.rmi.server.hostname", "172.20.10.9");
+
             GameServidorImpl servidor = new GameServidorImpl();
             Registry registry = LocateRegistry.createRegistry(1099);
             registry.rebind("JogoDaVelhaServidor", servidor);
