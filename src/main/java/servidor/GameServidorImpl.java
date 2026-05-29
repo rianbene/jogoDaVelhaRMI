@@ -49,8 +49,7 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
             if (indice < 0 || indice > 8) return;
             if (!tabuleiro[indice].isEmpty()) return;
 
-            if(tabuleiro[indice] == "X" || tabuleiro[indice] == "O") throw new RemoteException("Jogada inválida. Posição já ocupada."); //verificação extra para evitar jogadas inválidas
-            tabuleiro[indice] = (idJogador == 1) ? "X" : "O"; //jogada do jogador
+            tabuleiro[indice] = (idJogador == 1) ? "X" : "O";
             snapshot = tabuleiro.clone();
             vencedor = verificarVencedor(tabuleiro);
             empate = (vencedor == null) && verificarEmpate(tabuleiro);

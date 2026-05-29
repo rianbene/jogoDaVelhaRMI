@@ -53,11 +53,10 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
             }
 
             try {
-                servidor.realizarJogada(posicao, id);
                 minhaVez = false; //bloqueia o usuario de digitar 2x, só o servidor q pode dizer se é a vez dele agr
+                servidor.realizarJogada(posicao, id);
             } catch (RemoteException e) {
                 System.out.println("Erro ao comunicar com o servidor: " + e.getMessage());
-                continue;
             }
         }
     }
