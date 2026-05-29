@@ -9,7 +9,7 @@ import java.util.Scanner;
 public class ClienteMain {
     public static void main(String[] args) {
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+            Registry registry = LocateRegistry.getRegistry("172.20.10.9", 1099);
             GameServidor servidor = (GameServidor) registry.lookup("JogoDaVelhaServidor");
 
             Scanner scanner = new Scanner(System.in);

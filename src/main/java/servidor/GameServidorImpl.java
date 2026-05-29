@@ -43,24 +43,36 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
         final boolean empate;
         final int proximoJogador;
 
+        final boolean posicaoOcupada;
+
         synchronized (this) {
             if (jogoEncerrado) return;
             if (idJogador != jogadorAtual) return;
             if (indice < 0 || indice > 8) return;
-            if (!tabuleiro[indice].isEmpty()) return;
 
-            tabuleiro[indice] = (idJogador == 1) ? "X" : "O";
-            snapshot = tabuleiro.clone();
-            vencedor = verificarVencedor(tabuleiro);
-            empate = (vencedor == null) && verificarEmpate(tabuleiro);
-
-            if (vencedor != null || empate) {
-                jogoEncerrado = true;
-                proximoJogador = -1;
+            posicaoOcupada = !tabuleiro[indice].isEmpty();
+            if (posicaoOcupada) {
+                snapshot = null; vencedor = null; empate = false; proximoJogador = -1;
             } else {
-                jogadorAtual = (jogadorAtual == 1) ? 2 : 1;
-                proximoJogador = jogadorAtual;
+                tabuleiro[indice] = (idJogador == 1) ? "X" : "O";
+                snapshot = tabuleiro.clone();
+                vencedor = verificarVencedor(tabuleiro);
+                empate = (vencedor == null) && verificarEmpate(tabuleiro);
+
+                if (vencedor != null || empate) {
+                    jogoEncerrado = true;
+                    proximoJogador = -1;
+                } else {
+                    jogadorAtual = (jogadorAtual == 1) ? 2 : 1;
+                    proximoJogador = jogadorAtual;
+                }
             }
+        }
+
+        if (posicaoOcupada) {
+            clientes[idJogador - 1].exibirMensagem("Posição já ocupada! Tente novamente.");
+            clientes[idJogador - 1].notificarTurno(true);
+            return;
         }
 
         for (GameCliente c : clientes) {
