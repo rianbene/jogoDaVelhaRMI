@@ -55,7 +55,7 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
                 return; // Encerra o método sem alterar nada
             }
 
-            tabuleiro[indice] = (idJogador == 1) ? "0" : "X";
+            tabuleiro[indice] = (idJogador == 1) ? "O" : "X";
             snapshot = tabuleiro.clone();
             vencedor = verificarVencedor(tabuleiro);
             empate = (vencedor == null) && verificarEmpate(tabuleiro);
