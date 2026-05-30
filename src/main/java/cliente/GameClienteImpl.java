@@ -44,7 +44,7 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
                 continue;
                 }
                 
-            }
+            
             
             // lógica padrão de verificação de jogada
             if(!minhaVez) {
@@ -96,7 +96,6 @@ public class GameClienteImpl extends UnicastRemoteObject implements GameCliente 
     @Override
     public void notificarTurno(boolean suaVez) throws RemoteException {
         this.minhaVez = suaVez;
-        this.jogoEmAndamento = true;
         if (!suaVez) {
             System.out.println("Aguarde o turno do oponente...");
         }
