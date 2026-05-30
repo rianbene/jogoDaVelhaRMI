@@ -112,6 +112,7 @@ public class GameServidorImpl extends UnicastRemoteObject implements GameServido
                     } catch (RemoteException e) { /* Ignora se o cliente já tiver caído */ }
                 }
             }
+            System.exit(0);
             return;
         }
 
