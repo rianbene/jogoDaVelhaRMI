@@ -9,7 +9,10 @@ import java.util.Scanner;
 public class ClienteMain {
     public static void main(String[] args) {
         try {
-            Registry registry = LocateRegistry.getRegistry("172.20.10.9", 1099);
+            //definir o IP do cliente 
+            System.setProperty("java.rmi.server.hostname", "192.168.1.97");
+
+            Registry registry = LocateRegistry.getRegistry("192.168.1.97", 1099);
             GameServidor servidor = (GameServidor) registry.lookup("JogoDaVelhaServidor");
 
             Scanner scanner = new Scanner(System.in);
